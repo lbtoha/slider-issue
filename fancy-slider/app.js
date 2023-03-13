@@ -2,8 +2,10 @@ const imagesArea = document.querySelector(".images");
 const gallery = document.querySelector(".gallery");
 const galleryHeader = document.querySelector(".gallery-header");
 const searchBtn = document.getElementById("search-btn");
+const errorMessage = document.getElementById("error-message");
 const sliderBtn = document.getElementById("create-slider");
 const sliderContainer = document.getElementById("sliders");
+
 // selected image
 let sliders = [];
 
@@ -27,9 +29,19 @@ const showImages = (images) => {
 };
 
 const getImages = (query) => {
-  fetch(`https://pixabay.com/api/?key=${KEY}=${query}&image_type=photo&pretty=true`)
+  fetch(
+    `https://pixabay.com/api/?key=${KEY}=${query}&image_type=photo&pretty=true`
+  )
     .then((response) => response.json())
-    .then((data) => showImages(data.hits))
+    .then((data) => {
+      if (data.hits.length === 0) {
+        errorMessage.innerHTML = "Data not found";
+        imagesArea.style.display = "none";
+      } else {
+        errorMessage.innerHTML = "";
+        showImages(data.hits);
+      }
+    })
     .catch((err) => console.log(err));
 };
 
@@ -56,7 +68,8 @@ const createSlider = () => {
   // crate slider previous next area
   sliderContainer.innerHTML = "";
   const prevNext = document.createElement("div");
-  prevNext.className = "prev-next d-flex w-100 justify-content-between align-items-center";
+  prevNext.className =
+    "prev-next d-flex w-100 justify-content-between align-items-center";
   prevNext.innerHTML = `
   <span class="prev" onclick="changeItem(-1)"><i class="fas fa-chevron-left"></i></span>
   <span class="next" onclick="changeItem(1)"><i class="fas fa-chevron-right"></i></span>
@@ -65,25 +78,27 @@ const createSlider = () => {
   sliderContainer.appendChild(prevNext);
   document.querySelector(".main").style.display = "block";
   // hide image aria
-  imagesArea.style.display = "none";
 
   const duration = document.getElementById("duration").value || 1000;
-
-  sliders.forEach((slide) => {
-    let item = document.createElement("div");
-    item.className = "slider-item";
-    item.innerHTML = `<img class="w-100"
+  if (duration > 0) {
+    imagesArea.style.display = "none";
+    sliders.forEach((slide) => {
+      let item = document.createElement("div");
+      item.className = "slider-item";
+      item.innerHTML = `<img class="w-100"
     src="${slide}"
     alt="">`;
-    sliderContainer.appendChild(item);
-  });
-  changeSlide(0);
-  timer = setInterval(function () {
-    slideIndex++;
-    changeSlide(slideIndex);
-  }, duration);
+      sliderContainer.appendChild(item);
+    });
+    changeSlide(0);
+    timer = setInterval(function () {
+      slideIndex++;
+      changeSlide(slideIndex);
+    }, duration);
+  } else {
+    errorMessage.innerHTML = "Enter a valid second";
+  }
 };
-
 // change slider index
 const changeItem = (index) => {
   changeSlide((slideIndex += index));
@@ -113,9 +128,16 @@ searchBtn.addEventListener("click", function () {
   document.querySelector(".main").style.display = "none";
   clearInterval(timer);
   const search = document.getElementById("search");
-  getImages(search.value);
-  search.value = "";
-  sliders.length = 0;
+  if (search.value === "") {
+    errorMessage.innerText = "Invalide Search";
+    imagesArea.style.display = "none";
+    return;
+  } else {
+    errorMessage.innerText = "";
+    getImages(search.value);
+    search.value = "";
+    sliders.length = 0;
+  }
 });
 
 sliderBtn.addEventListener("click", function () {
